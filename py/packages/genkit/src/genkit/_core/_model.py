@@ -76,13 +76,20 @@ ModelRequestConfigT = TypeVar('ModelRequestConfigT', covariant=True)
 
 @dataclass(frozen=True, kw_only=True)
 class ModelRef(Generic[ModelRefConfigT]):
-    """Frozen reference to a model, optionally tied to a config schema."""
+    """Frozen reference to a model tied to a config schema."""
 
     name: str
     config_schema: type[ModelRefConfigT]
     info: ModelInfo | None = None
     version: str | None = None
     config: ModelRefConfigT | None = None
+
+    def __post_init__(self) -> None:
+        """Validate config type at runtime if provided."""
+        if self.config is not None and not isinstance(self.config, self.config_schema):
+            raise TypeError(
+                f'config must be an instance of {self.config_schema.__name__}, got {type(self.config).__name__}'
+            )
 
 
 class Message(MessageData):
