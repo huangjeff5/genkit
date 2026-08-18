@@ -43,7 +43,6 @@ from genkit import (
     Constrained,
     GenkitError,
     Message,
-    ModelConfig,
     ModelInfo,
     ModelRequest,
     ModelResponse,
@@ -58,6 +57,7 @@ from genkit import (
 from genkit.model import Candidate, FinishReason, get_basic_usage_stats
 from genkit.plugin_api import (
     ActionRunContext,
+    ModelConfig,
     StatusName,
 )
 
