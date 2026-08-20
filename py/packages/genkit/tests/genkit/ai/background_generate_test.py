@@ -222,6 +222,7 @@ async def test_generate_keeps_fallback_answer_when_start_raises(ai: Genkit) -> N
     assert response.operation is None
 
 
+<<<<<<< HEAD
 @pytest.mark.asyncio
 async def test_generate_persists_clean_history_without_injected_docs(ai: Genkit) -> None:
     """Injected RAG text stays off response.request.messages."""
@@ -373,3 +374,21 @@ def test_model_response_eq_uses_operation_id() -> None:
     c = ModelResponse(operation=Operation(id='unique-b'))
     assert a == b
     assert a != c
+
+
+@pytest.mark.asyncio
+async def test_check_action_accepts_dumped_operation_with_extra_keys(ai: Genkit) -> None:
+    """The Dev UI check action ignores leftover dump keys like latencyMs."""
+    action = await register_bg_model(ai)
+    dumped = {
+        'id': 'bg-op-123',
+        'done': False,
+        'action': '/background-model/bg-model',
+        'latencyMs': 42,
+    }
+
+    result = await action.check_action.run(dumped)
+
+    assert result.response.id == 'bg-op-123'
+    assert result.response.action == '/background-model/bg-model'
+
