@@ -17,6 +17,7 @@
 """generate() / generate_operation() against a define_background_model fake."""
 
 from collections.abc import Awaitable, Callable
+from typing import Any, cast
 
 import pytest
 
@@ -222,7 +223,6 @@ async def test_generate_keeps_fallback_answer_when_start_raises(ai: Genkit) -> N
     assert response.operation is None
 
 
-<<<<<<< HEAD
 @pytest.mark.asyncio
 async def test_generate_persists_clean_history_without_injected_docs(ai: Genkit) -> None:
     """Injected RAG text stays off response.request.messages."""
@@ -330,7 +330,7 @@ async def test_define_model_returning_operation_raises(ai: Genkit) -> None:
     async def model_fn(_request: ModelRequest, _ctx: ActionRunContext) -> Operation:
         return Operation(id='sneaky', done=False)
 
-    ai.define_model(name='plain', fn=model_fn)
+    ai.define_model(name='plain', fn=cast(Any, model_fn))
 
     with pytest.raises(GenkitError, match='define_background_model') as exc_info:
         await ai.generate(model='plain', prompt='hi')
@@ -379,7 +379,18 @@ def test_model_response_eq_uses_operation_id() -> None:
 @pytest.mark.asyncio
 async def test_check_action_accepts_dumped_operation_with_extra_keys(ai: Genkit) -> None:
     """A persisted dump still checks, even with leftover keys like latencyMs."""
-    action = await register_bg_model(ai)
+
+    async def start(_request: ModelRequest, _ctx: ActionRunContext) -> Operation:
+        return Operation(id='bg-op-123', done=False)
+
+    async def check(op: Operation) -> Operation:
+        return op
+
+    action = ai.define_background_model(
+        name='bg-model',
+        start=start,
+        check=check,
+    )
     dumped = {
         'id': 'bg-op-123',
         'done': False,
@@ -392,4 +403,3 @@ async def test_check_action_accepts_dumped_operation_with_extra_keys(ai: Genkit)
     assert result.response.id == 'bg-op-123'
     assert result.response.action == '/background-model/bg-model'
     assert 'latencyMs' not in result.response.model_dump()
-

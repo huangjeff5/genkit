@@ -129,6 +129,7 @@ class BackgroundAction(Generic[OutputT]):
         Returns:
             Updated Operation with current status.
         """
+        operation = require_operation(value=operation)
         result = await self.check_action.run(operation)
         return _ensure_operation(response=result.response, name=self.check_action.name)
 
@@ -144,6 +145,7 @@ class BackgroundAction(Generic[OutputT]):
         Raises:
             GenkitError: If this action does not implement cancel.
         """
+        operation = require_operation(value=operation)
         if self.cancel_action is None:
             raise GenkitError(
                 status='UNIMPLEMENTED',
@@ -161,7 +163,6 @@ def _ensure_operation(*, response: object, name: str) -> Operation:
         status='FAILED_PRECONDITION',
         message=f"Background model '{name}' did not return an operation",
     )
-
 
 
 def define_background_model(
