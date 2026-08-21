@@ -19,10 +19,8 @@
 from __future__ import annotations
 
 import time
-from collections.abc import Awaitable, Callable, Mapping
+from collections.abc import Awaitable, Callable
 from typing import Any, Generic, TypeVar
-
-from pydantic import BaseModel, ValidationError
 
 from genkit._core._action import Action, ActionKind, ActionRunContext
 from genkit._core._error import GenkitError
@@ -164,23 +162,6 @@ def _ensure_operation(*, response: object, name: str) -> Operation:
         message=f"Background model '{name}' did not return an operation",
     )
 
-
-class DefineBackgroundModelOptions(BaseModel):
-    """Options for defining a background model.
-
-    Attributes:
-        name: Unique name for this background model.
-        label: Human-readable label (defaults to name).
-        versions: Known version names for this model.
-        supports: Model capability information.
-        config_schema: Custom options schema for this model.
-    """
-
-    name: str
-    label: str | None = None
-    versions: list[str] | None = None
-    supports: dict[str, Any] | None = None
-    config_schema: type | dict[str, Any] | None = None
 
 
 def define_background_model(
@@ -370,62 +351,42 @@ async def lookup_background_action(
     )
 
 
-def operation_from_handle(value: object) -> Operation:
-    """Read a persisted poll handle.
-
-    The Dev UI posts start output back here with leftover keys like
-    latencyMs that aren't on the Operation wire format. We ignore extras
-    instead of failing loudly: persist the handle as a dict, then
-    revalidate it on ai.check_operation() — leftover keys shouldn't 500
-    that path.
-    """
-    try:
-        return Operation.model_validate(value)
-    except ValidationError as exc:
-        raise GenkitError(
-            status='INVALID_ARGUMENT',
-            message='Provided operation is not a valid Operation.',
-            cause=exc,
-        ) from exc
-
-
 async def resolve_operation_action(
     registry: Registry,
-    operation: Operation | Mapping[str, Any],
+    operation: Operation,
 ) -> tuple[Operation, BackgroundAction]:
     """Turn a poll handle into the background action that owns it."""
-    resolved = operation_from_handle(operation)
-    if not resolved.action:
+    if not operation.action:
         raise GenkitError(
             status='INVALID_ARGUMENT',
             message='Provided operation is missing original request information',
         )
 
-    background_action = await lookup_background_action(registry, resolved.action)
+    background_action = await lookup_background_action(registry, operation.action)
     if background_action is None:
         raise GenkitError(
             status='INVALID_ARGUMENT',
-            message=f'Failed to resolve background action from original request: {resolved.action}',
+            message=f'Failed to resolve background action from original request: {operation.action}',
         )
-    return resolved, background_action
+    return operation, background_action
 
 
 async def check_operation(
     registry: Registry,
-    operation: Operation | Mapping[str, Any],
+    operation: Operation,
 ) -> Operation:
     """Check the status of a background operation.
 
     Args:
         registry: The registry to look up actions from.
-        operation: A live Operation, or a dump of one.
+        operation: The poll handle.
 
     Returns:
         Updated Operation with current status.
 
     Raises:
-        GenkitError: If the handle cannot be read, is missing action, or
-            the action is not found.
+        GenkitError: If the handle is missing action, or the action is
+            not found.
     """
     resolved, background_action = await resolve_operation_action(registry, operation)
     return await background_action.check(resolved)
@@ -433,20 +394,20 @@ async def check_operation(
 
 async def cancel_operation(
     registry: Registry,
-    operation: Operation | Mapping[str, Any],
+    operation: Operation,
 ) -> Operation:
     """Cancel a background operation.
 
     Args:
         registry: The registry to look up actions from.
-        operation: A live Operation, or a dump of one.
+        operation: The poll handle.
 
     Returns:
         Updated Operation reflecting the cancel attempt.
 
     Raises:
-        GenkitError: If the handle cannot be read, is missing action, or
-            the action is not found.
+        GenkitError: If the handle is missing action, the action is not
+            found, or cancel is not implemented.
     """
     resolved, background_action = await resolve_operation_action(registry, operation)
     if not background_action.supports_cancel:
