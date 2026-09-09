@@ -49,7 +49,7 @@ JS: beta class only (Jun 2025). Never had a runtime gate.
 
 **Go: stable** (`DefineResource`).
 
-**Python: drop.** Do not ship resources as part of Python GA. (Go keeping them is not a reason to keep them.)
+**Python: drop.** Do not ship resources as part of Python GA.
 
 **Agents** (`defineAgent` / `definePromptAgent` / `defineCustomAgent`)
 
