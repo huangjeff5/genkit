@@ -73,7 +73,7 @@ JS: **deleted** from stable (Jan 2025); agents are the replacement, still in bet
 - **Durable `StreamManager`** (Dec 2025) — JS experiment; Go already has a stable in-memory stream manager plus Firebase exp stores. Python does not have this and we are not adding it for GA.
 - **Firebase Data Connect** (`@genkit-ai/firebase/beta`) — JS only. Go does not have it. Python is not adding it.
 
-Firestore session store is different: it is how you persist an **agent** session. JS/Go keep it next to agents (plugin `/beta` or `exp`). Python keeps `FirestoreSessionStore` on `genkit-google-cloud` for apps that opted into `genkit.exp`.
+- **`FirestoreSessionStore`** — exported under `@genkit-ai/google-cloud/beta` (and `@genkit-ai/firebase/beta`) in JS because agent sessions are beta. Go keeps session stores in `exp`. Python ships `FirestoreSessionStore` on `genkit-google-cloud` for apps using `genkit.exp`.
 
 ## Python in one line
 
